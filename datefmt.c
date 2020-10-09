@@ -3,6 +3,9 @@
 #include <ctype.h>
 #include <inttypes.h>
 #include <time.h>
+#include <string.h>
+
+#define VERSION "0.1"
 
 enum state {
 	BEGIN,
@@ -145,14 +148,70 @@ static void parser_init(struct parser *parser)
         parser->format = "%F %R";
 }
 
-int main(int argc, const char *argv[])
+static void shift_arg(int *argc, char **argv)
+{
+        if (*argc < 1)
+                return;
+        memmove(argv, &argv[1], ((*argc)-1) * sizeof(char*));
+        *argc = *argc - 1;
+}
+
+static void usage() {
+        printf("usage: datefmt [OPTION...] [FORMAT]\n\n");
+        printf("format unix timestamps from stdin\n\n");
+        printf("  -a, --after <timestamp>  only format timestamps after this date \n");
+        printf("      --version            display version information and exit \n");
+
+        printf("\n  FORMAT\n    a strftime format string, defaults to '%%F %%R'\n");
+
+        printf("\n  EXAMPLE\n    datefmt --after $(date -d yesterday +%%s) < spreadsheet.csv\n\n");
+        printf("  Created By: William Casarin <https://jb55.com>\n");
+        exit(0);
+}
+
+static void parse_arg(int *argc, char **argv, struct parser *parser)
+{
+        char *endptr;
+
+        if (!strcmp(argv[0], "--after") || !strcmp(argv[0], "-a")) {
+                shift_arg(argc, argv);
+                if (*argc > 0) {
+                        parser->after = strtoll(argv[0], &endptr, 10);
+                        if (endptr == argv[0]) {
+                                printf("error: invalid after value '%s'\n", argv[0]);
+                                exit(1);
+                        }
+                        shift_arg(argc, argv);
+                } else {
+                        printf("error: expected argument to --after\n");
+                        exit(1);
+                }
+        } else if (!strcmp("--help", argv[0])) {
+                usage();
+        } else if (!strcmp("--version", argv[0])) {
+                printf("datefmt " VERSION "\n");
+                exit(0);
+        } else {
+                parser->format = (const char*)argv[0];
+                shift_arg(argc, argv);
+        }
+}
+
+static void parse_args(int argc, char **argv, struct parser *parser)
+{
+        shift_arg(&argc, argv);
+
+        while (argc > 0) {
+                parse_arg(&argc, argv, parser);
+        }
+}
+
+int main(int argc, char *argv[])
 {
 	struct parser parser;
-	parser_init(&parser);
 
-        if (argc == 2) {
-                parser.format = argv[1];
-        }
+	parser_init(&parser);
+        parse_args(argc, argv, &parser);
 
 	do {
 		parser.len = fread(parser.buf, 1, READSIZE, stdin);

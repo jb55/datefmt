@@ -2,5 +2,5 @@
 with pkgs;
 stdenv.mkDerivation {
   name = "datefmt";
-  nativeBuildInputs = [ ];
+  nativeBuildInputs = [ gdb ];
 }
