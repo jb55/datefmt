@@ -46,6 +46,13 @@ static enum state update_state(int c, enum state state)
 	return state;
 }
 
+static void print_rest(struct parser *parser, char *charbuf, enum state *new_state)
+{
+        *new_state = BOUNDARY;
+        printf("%.*s%s", parser->n_digits, parser->digits, charbuf);
+        parser->n_digits = 0;
+}
+
 static enum state doaction(int c, enum state new_state, struct parser *parser)
 {
         static char timebuf[128];
@@ -66,18 +73,14 @@ static enum state doaction(int c, enum state new_state, struct parser *parser)
                         strftime(timebuf, sizeof(timebuf), parser->format, localtime(&ts));
                         printf("%s%s", timebuf, charbuf);
                 } else {
-                        new_state = BOUNDARY;
-                        printf("%.*s%s", parser->n_digits, parser->digits, charbuf);
-                        parser->n_digits = 0;
+                        print_rest(parser, charbuf, &new_state);
                 }
         } else if (new_state == MIDDLE) {
                 if (parser->n_digits < 10) {
                         parser->digits[parser->n_digits++] = (char)c;
                         parser->digits[parser->n_digits] = 0;
                 } else {
-                        new_state = BOUNDARY;
-                        printf("%.*s%s", parser->n_digits, parser->digits, charbuf);
-                        parser->n_digits = 0;
+                        print_rest(parser, charbuf, &new_state);
                 }
         } else {
                 if (c != -1)
