@@ -148,14 +148,6 @@ static void parser_init(struct parser *parser)
         parser->format = "%F %R";
 }
 
-static void shift_arg(int *argc, char **argv)
-{
-        if (*argc < 1)
-                return;
-        memmove(argv, &argv[1], ((*argc)-1) * sizeof(char*));
-        *argc = *argc - 1;
-}
-
 static void usage() {
         printf("usage: datefmt [OPTION...] [FORMAT]\n\n");
         printf("format unix timestamps from stdin\n\n");
@@ -164,9 +156,18 @@ static void usage() {
 
         printf("\n  FORMAT\n    a strftime format string, defaults to '%%F %%R'\n");
 
-        printf("\n  EXAMPLE\n    datefmt --after $(date -d yesterday +%%s) < spreadsheet.csv\n\n");
+        printf("\n  EXAMPLE\n    datefmt --after $(date -d yesterday +%%s) %%R < spreadsheet.csv\n\n");
         printf("  Created By: William Casarin <https://jb55.com>\n");
         exit(0);
+}
+
+
+static void shift_arg(int *argc, char **argv)
+{
+        if (*argc < 1)
+                return;
+        memmove(argv, &argv[1], ((*argc)-1) * sizeof(char*));
+        *argc = *argc - 1;
 }
 
 static void parse_arg(int *argc, char **argv, struct parser *parser)
