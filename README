@@ -1,0 +1,7 @@
+
+datefmt
+-------
+
+format unix timestamps from stdin
+
+usage: datefmt <strftime format>
