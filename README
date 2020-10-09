@@ -1,7 +1,14 @@
-
-datefmt
--------
+usage: datefmt [OPTION...] [FORMAT]
 
 format unix timestamps from stdin
 
-usage: datefmt <strftime format>
+  -a, --after <timestamp>  only format timestamps after this date 
+      --version            display version information and exit 
+
+  FORMAT
+    a strftime format string, defaults to '%F %R'
+
+  EXAMPLE
+    datefmt --after $(date -d yesterday +%s) < spreadsheet.csv
+
+  Created By: William Casarin <https://jb55.com>
