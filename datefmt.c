@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 enum state {
 	BEGIN,
@@ -13,13 +14,16 @@ struct parser {
 	enum state state;
 	unsigned char *buf;
 	size_t len;
+	int64_t after;
 	int n_digits;
 	char digits[12];
 };
 
 static enum state update_state(int c, enum state state)
 {
-	if (c == -1 || isspace(c)) {
+        int is_boundary = c == -1 || !isalnum(c);
+
+	if (is_boundary) {
 		if (state == WAIT || state == BEGIN) {
 			return BOUNDARY;
 		} else if (state == MIDDLE) {
@@ -33,8 +37,8 @@ static enum state update_state(int c, enum state state)
                 }
 	}
 
-	if (state == BOUNDARY || state == BEGIN) {
-		return WAIT;
+	if (state == BEGIN) {
+		return BOUNDARY;
 	}
 
 	return state;
@@ -43,7 +47,7 @@ static enum state update_state(int c, enum state state)
 static enum state doaction(int c, enum state new_state, struct parser *parser)
 {
         char charbuf[2];
-        unsigned ts;
+        int64_t ts;
 
         if (c == -1)
                 charbuf[0] = 0;
@@ -53,15 +57,21 @@ static enum state doaction(int c, enum state new_state, struct parser *parser)
         }
 
         if (parser->state == MIDDLE && new_state == BOUNDARY) {
-                ts = strtoul(parser->digits, NULL, 10);
+                ts = strtoll(parser->digits, NULL, 10);
                 /* found date */
-                printf("[%d]%s", ts, charbuf);
+                if (ts > parser->after) {
+                        printf("[%" PRId64 "]%s", ts, charbuf);
+                } else {
+                        new_state = BOUNDARY;
+                        printf("%.*s%s", parser->n_digits, parser->digits, charbuf);
+                        parser->n_digits = 0;
+                }
         } else if (new_state == MIDDLE) {
                 if (parser->n_digits < 10) {
                         parser->digits[parser->n_digits++] = (char)c;
                         parser->digits[parser->n_digits] = 0;
                 } else {
-                        new_state = WAIT;
+                        new_state = BOUNDARY;
                         printf("%.*s%s", parser->n_digits, parser->digits, charbuf);
                         parser->n_digits = 0;
                 }
@@ -102,7 +112,7 @@ static void process(struct parser *parser, int last)
 		new_state = update_state(c, parser->state);
 
                 /* debug */
-                /* printf("%d | %s -> %s\n", c, state_name(parser->state), state_name(new_state)); */
+                /* printf("%c | %s -> %s\n", (char)c, state_name(parser->state), state_name(new_state)); */
 
 		/* action */
                 new_state = doaction(c, new_state, parser);
@@ -123,6 +133,7 @@ static void parser_init(struct parser *parser)
 	parser->buf = buf;
 	parser->state = BEGIN;
 	parser->len = 0;
+	parser->after = 1420070400ULL;
 	parser->n_digits = 0;
 }
 

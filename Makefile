@@ -1,5 +1,5 @@
 
-CFLAGS = -Wall -Werror -std=c89
+CFLAGS = -Wall -Werror -std=c99
 
 datefmt: datefmt.c
 	$(CC) $(CFLAGS) $< -o $@
