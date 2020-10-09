@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <time.h>
 
 enum state {
 	BEGIN,
@@ -16,6 +17,7 @@ struct parser {
 	size_t len;
 	int64_t after;
 	int n_digits;
+        const char *format;
 	char digits[12];
 };
 
@@ -46,6 +48,7 @@ static enum state update_state(int c, enum state state)
 
 static enum state doaction(int c, enum state new_state, struct parser *parser)
 {
+        static char timebuf[128];
         char charbuf[2];
         int64_t ts;
 
@@ -60,7 +63,8 @@ static enum state doaction(int c, enum state new_state, struct parser *parser)
                 ts = strtoll(parser->digits, NULL, 10);
                 /* found date */
                 if (ts > parser->after) {
-                        printf("[%" PRId64 "]%s", ts, charbuf);
+                        strftime(timebuf, sizeof(timebuf), parser->format, localtime(&ts));
+                        printf("%s%s", timebuf, charbuf);
                 } else {
                         new_state = BOUNDARY;
                         printf("%.*s%s", parser->n_digits, parser->digits, charbuf);
@@ -135,12 +139,17 @@ static void parser_init(struct parser *parser)
 	parser->len = 0;
 	parser->after = 1420070400ULL;
 	parser->n_digits = 0;
+        parser->format = "%F %R";
 }
 
 int main(int argc, const char *argv[])
 {
 	struct parser parser;
 	parser_init(&parser);
+
+        if (argc == 2) {
+                parser.format = argv[1];
+        }
 
 	do {
 		parser.len = fread(parser.buf, 1, READSIZE, stdin);
