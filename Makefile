@@ -3,13 +3,13 @@ CFLAGS = -g -Wall -Werror -std=c99
 PREFIX ?= /usr
 
 datefmt: datefmt.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 install: datefmt
 	mkdir -p $(PREFIX)/bin
 	cp datefmt $(PREFIX)/bin
 
-clean: fake
+clean:
 	rm -f datefmt
 
-.PHONY: fake
+.PHONY: install clean
