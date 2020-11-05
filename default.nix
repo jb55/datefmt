@@ -1,6 +1,10 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs;
 stdenv.mkDerivation {
-  name = "datefmt";
-  nativeBuildInputs = [ gdb ];
+  pname = "datefmt";
+  version = "0.1";
+
+  makeFlags = "PREFIX=$(out)";
+
+  src = ./.;
 }
