@@ -152,7 +152,7 @@ static void usage() {
 	printf("usage: datefmt [OPTION...] [FORMAT]\n\n");
 	printf("format unix timestamps from stdin\n\n");
 	printf("  -a, --after <timestamp>  only format timestamps after this date \n");
-	printf("      --version	    display version information and exit \n");
+	printf("      --version	           display version information and exit \n");
 
 	printf("\n  FORMAT\n    a strftime format string, defaults to '%%F %%R'\n");
 
