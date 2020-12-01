@@ -143,7 +143,7 @@ static void parser_init(struct parser *parser)
 	parser->buf = buf;
 	parser->state = BEGIN;
 	parser->len = 0;
-	parser->after = 1420070400ULL;
+	parser->after = 946684800ULL;
 	parser->n_digits = 0;
 	parser->format = "%F %R";
 }
