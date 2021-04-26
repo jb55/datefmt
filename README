@@ -3,12 +3,14 @@ usage: datefmt [OPTION...] [FORMAT]
 format unix timestamps from stdin
 
   -a, --after <timestamp>  only format timestamps after this date 
-      --version            display version information and exit 
+  -f, --future             only format timestamps in the future 
+  -p, --past               only format timestamps in the past 
+      --version	           display version information and exit 
 
   FORMAT
     a strftime format string, defaults to '%F %R'
 
   EXAMPLE
-    datefmt --after $(date -d yesterday +%s) < spreadsheet.csv
+    datefmt --after $(date -d yesterday +%s) %R < spreadsheet.csv
 
   Created By: William Casarin <https://jb55.com>
