@@ -20,6 +20,7 @@ struct parser {
 	size_t len;
 	int64_t after;
 	int n_digits;
+	int dir;
 	const char *format;
 	char digits[12];
 };
@@ -56,6 +57,22 @@ static void print_rest(struct parser *parser, char *charbuf, enum state *new_sta
 	parser->n_digits = 0;
 }
 
+static int time_matches(struct parser *parser, int64_t ts)
+{
+	// always match after
+	if (ts <= parser->after)
+		return 0;
+
+	if (parser->dir == -1) {
+		return ts <= time(NULL);
+	} else if (parser->dir == 1) {
+		return ts > time(NULL);
+	}
+
+	// dir == 0 has no conditions on now
+	return 1;
+}
+
 static enum state doaction(int c, enum state new_state, struct parser *parser)
 {
 	static char timebuf[128];
@@ -72,7 +89,7 @@ static enum state doaction(int c, enum state new_state, struct parser *parser)
 	if (parser->state == MIDDLE && new_state == BOUNDARY) {
 		ts = strtoll(parser->digits, NULL, 10);
 		/* found date */
-		if (ts > parser->after) {
+		if (time_matches(parser, ts)) {
 			strftime(timebuf, sizeof(timebuf), parser->format, localtime(&ts));
 			printf("%s%s", timebuf, charbuf);
 		} else {
@@ -144,6 +161,7 @@ static void parser_init(struct parser *parser)
 	parser->state = BEGIN;
 	parser->len = 0;
 	parser->after = 946684800ULL;
+	parser->dir = 0;
 	parser->n_digits = 0;
 	parser->format = "%F %R";
 }
@@ -152,6 +170,8 @@ static void usage() {
 	printf("usage: datefmt [OPTION...] [FORMAT]\n\n");
 	printf("format unix timestamps from stdin\n\n");
 	printf("  -a, --after <timestamp>  only format timestamps after this date \n");
+	printf("  -f, --future             only format timestamps in the future \n");
+	printf("  -p, --past               only format timestamps in the past \n");
 	printf("      --version	           display version information and exit \n");
 
 	printf("\n  FORMAT\n    a strftime format string, defaults to '%%F %%R'\n");
@@ -192,6 +212,12 @@ static void parse_arg(int *argc, char **argv, struct parser *parser)
 	} else if (!strcmp("--version", argv[0])) {
 		printf("datefmt " VERSION "\n");
 		exit(0);
+	} else if (!strcmp("--past", argv[0]) || !strcmp("-p", argv[0])) {
+		parser->dir = -1;
+		shift_arg(argc, argv);
+	} else if (!strcmp("--future", argv[0]) || !strcmp("-f", argv[0])) {
+		parser->dir = 1;
+		shift_arg(argc, argv);
 	} else {
 		parser->format = (const char*)argv[0];
 		shift_arg(argc, argv);
