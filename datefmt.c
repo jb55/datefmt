@@ -18,7 +18,7 @@ struct parser {
 	enum state state;
 	unsigned char *buf;
 	size_t len;
-	int64_t after;
+	int64_t after, before;
 	int n_digits;
 	int dir;
 	const char *format;
@@ -62,6 +62,11 @@ static int time_matches(struct parser *parser, int64_t ts)
 	// always match after
 	if (ts <= parser->after)
 		return 0;
+
+	// match before if it's set
+	if (parser->before != -1 && ts >= parser->before) {
+		return 0;
+	}
 
 	if (parser->dir == -1) {
 		return ts <= time(NULL);
@@ -160,7 +165,8 @@ static void parser_init(struct parser *parser)
 	parser->buf = buf;
 	parser->state = BEGIN;
 	parser->len = 0;
-	parser->after = 946684800ULL;
+	parser->after = 946684800LL;
+	parser->before = -1;
 	parser->dir = 0;
 	parser->n_digits = 0;
 	parser->format = "%F %R";
@@ -170,6 +176,7 @@ static void usage() {
 	printf("usage: datefmt [OPTION...] [FORMAT]\n\n");
 	printf("format unix timestamps from stdin\n\n");
 	printf("  -a, --after <timestamp>  only format timestamps after this date \n");
+	printf("  -b, --before <timestamp> only format timestamps before this date \n");
 	printf("  -f, --future             only format timestamps in the future \n");
 	printf("  -p, --past               only format timestamps in the past \n");
 	printf("      --version	           display version information and exit \n");
@@ -190,25 +197,35 @@ static void shift_arg(int *argc, char **argv)
 	*argc = *argc - 1;
 }
 
-static void parse_arg(int *argc, char **argv, struct parser *parser)
+static time_t parse_date_arg(int *argc, char **argv)
 {
 	char *endptr;
+	time_t res;
 
-	if (!strcmp(argv[0], "--after") || !strcmp(argv[0], "-a")) {
-		shift_arg(argc, argv);
-		if (*argc > 0) {
-			parser->after = strtoll(argv[0], &endptr, 10);
-			if (endptr == argv[0]) {
-				printf("error: invalid after value '%s'\n", argv[0]);
-				exit(1);
-			}
-			shift_arg(argc, argv);
-		} else {
-			printf("error: expected argument to --after\n");
+	shift_arg(argc, argv);
+	if (*argc > 0) {
+		res = strtoll(argv[0], &endptr, 10);
+		if (endptr == argv[0]) {
+			printf("error: invalid after value '%s'\n", argv[0]);
 			exit(1);
 		}
+		shift_arg(argc, argv);
+	} else {
+		printf("error: expected argument to --after\n");
+		exit(1);
+	}
+
+	return res;
+}
+
+static void parse_arg(int *argc, char **argv, struct parser *parser)
+{
+	if (!strcmp(argv[0], "--after") || !strcmp(argv[0], "-a")) {
+		parser->after = parse_date_arg(argc, argv);
 	} else if (!strcmp("--help", argv[0])) {
 		usage();
+	} else if (!strcmp("--before", argv[0]) || !strcmp(argv[0], "-b")) {
+		parser->before = parse_date_arg(argc, argv);
 	} else if (!strcmp("--version", argv[0])) {
 		printf("datefmt " VERSION "\n");
 		exit(0);
