@@ -21,8 +21,9 @@ struct parser {
 	int64_t after, before;
 	int n_digits;
 	int dir;
+	int ms;
 	const char *format;
-	char digits[12];
+	char digits[15];
 };
 
 static enum state update_state(int c, enum state state)
@@ -92,6 +93,9 @@ static enum state doaction(int c, enum state new_state, struct parser *parser)
 	}
 
 	if (parser->state == MIDDLE && new_state == BOUNDARY) {
+		if (parser->ms)
+			parser->digits[10] = 0;
+
 		ts = strtoll(parser->digits, NULL, 10);
 		/* found date */
 		if (time_matches(parser, ts)) {
@@ -101,7 +105,7 @@ static enum state doaction(int c, enum state new_state, struct parser *parser)
 			print_rest(parser, charbuf, &new_state);
 		}
 	} else if (new_state == MIDDLE) {
-		if (parser->n_digits < 10) {
+		if (parser->n_digits < (parser->ms? 13 : 10)) {
 			parser->digits[parser->n_digits++] = (char)c;
 			parser->digits[parser->n_digits] = 0;
 		} else {
@@ -168,6 +172,7 @@ static void parser_init(struct parser *parser)
 	parser->after = 946684800LL;
 	parser->before = -1;
 	parser->dir = 0;
+	parser->ms = 0;
 	parser->n_digits = 0;
 	parser->format = "%F %R";
 }
@@ -180,6 +185,7 @@ static void usage() {
 	printf("  -f, --future             only format timestamps in the future \n");
 	printf("  -p, --past               only format timestamps in the past \n");
 	printf("      --version	           display version information and exit \n");
+	printf("  -m, --ms	           interpret timestamps as milliseconds instead of seconds \n");
 
 	printf("\n  FORMAT\n    a strftime format string, defaults to '%%F %%R'\n");
 
@@ -234,6 +240,9 @@ static void parse_arg(int *argc, char **argv, struct parser *parser)
 		shift_arg(argc, argv);
 	} else if (!strcmp("--future", argv[0]) || !strcmp("-f", argv[0])) {
 		parser->dir = 1;
+		shift_arg(argc, argv);
+	} else if (!strcmp("--ms", argv[0]) || !strcmp("-m", argv[0])) {
+		parser->ms = 1;
 		shift_arg(argc, argv);
 	} else {
 		parser->format = (const char*)argv[0];
